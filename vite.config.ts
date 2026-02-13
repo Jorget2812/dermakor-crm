@@ -23,7 +23,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
             'supabase-vendor': ['@supabase/supabase-js'],
             'icons-vendor': ['lucide-react'],
             'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable'],
@@ -31,12 +30,8 @@ export default defineConfig(({ mode }) => {
         }
       },
       chunkSizeWarningLimit: 1000,
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: true,
-        }
-      }
+      minify: 'esbuild',
+      target: 'es2015',
     }
   };
 });
