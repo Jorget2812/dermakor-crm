@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Bell, ShieldAlert } from 'lucide-react';
+import { Search, Plus, Bell, ShieldAlert, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
     activeTab: string;
@@ -7,6 +7,9 @@ interface HeaderProps {
     setSearchQuery: (query: string) => void;
     onNewLead: () => void;
     error?: string;
+    isMessagingOpen: boolean;
+    setIsMessagingOpen: (isOpen: boolean) => void;
+    unreadCount: number;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -14,7 +17,10 @@ const Header: React.FC<HeaderProps> = ({
     searchQuery,
     setSearchQuery,
     onNewLead,
-    error
+    error,
+    isMessagingOpen,
+    setIsMessagingOpen,
+    unreadCount
 }) => {
     const getTabTitle = () => {
         switch (activeTab) {
@@ -61,6 +67,19 @@ const Header: React.FC<HeaderProps> = ({
 
                 {/* Buttons Container */}
                 <div className="flex items-center gap-3">
+                    {/* Messaging */}
+                    <button
+                        onClick={() => setIsMessagingOpen(true)}
+                        className="relative p-3 bg-[#1C1F26] border border-[#2D323B] rounded-xl text-[#9E9E96] hover:text-white hover:border-[#D4AF37]/50 transition-all shadow-xl group"
+                    >
+                        <MessageSquare size={18} className="group-hover:scale-110 transition-transform" />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#D4AF37] text-[#1C1F26] text-[10px] font-black rounded-full border-2 border-[#0F1115] flex items-center justify-center px-1">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </button>
+
                     {/* Notifications */}
                     <button className="relative p-3 bg-[#1C1F26] border border-[#2D323B] rounded-xl text-[#9E9E96] hover:text-white hover:border-[#D4AF37]/50 transition-all shadow-xl">
                         <Bell size={18} />

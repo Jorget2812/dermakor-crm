@@ -203,24 +203,9 @@ export const fetchLeads = async (): Promise<Prospect[]> => {
 
 export const createLead = async (prospect: Prospect, userId: string): Promise<Prospect> => {
     const dbData = toDatabase(prospect);
-    // Always force owner_id to the current user on creation
+    // Always force owner_id and assigned_to_id to the current user on creation
     (dbData as any).owner_id = userId;
-
-    // Check if assigned_to_id matches a user in the legacy 'users' table
-    // For now, if it fails, we want the error to be visible.
-    // However, if the current user is NOT in the 'users' table, 
-    // we should set assigned_to_id to null to avoid FK violation.
-    const { data: userExists } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .single();
-
-    if (!userExists) {
-        dbData.assigned_to_id = null;
-    } else {
-        dbData.assigned_to_id = userId;
-    }
+    dbData.assigned_to_id = userId;
 
     const { data, error } = await supabase
         .from('prospects')

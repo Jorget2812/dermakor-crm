@@ -25,8 +25,10 @@ import LeadCard from './components/LeadCard';
 import LeadDetails from './components/LeadDetails';
 import SwissMap from './components/SwissMap';
 import Settings from './components/Settings';
+import MessagingPanel from './components/MessagingPanel';
 import { useAuth } from './components/AuthProvider';
 import { fetchLeads, createLead, updateLead, fetchCollaborators } from './utils/leads';
+import { messagingService } from './services/messagingService';
 
 const KanbanColumn: React.FC<{
   stage: PipelineStage;
@@ -97,11 +99,35 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Load leads and vendedores from Supabase on mount
   useEffect(() => {
     loadDataFromDatabase();
   }, []);
+
+  // Messaging Effects
+  useEffect(() => {
+    if (!user) return;
+
+    const loadUnread = async () => {
+      const count = await messagingService.fetchUnreadCount();
+      setUnreadCount(count);
+    };
+
+    loadUnread();
+
+    const subscription = messagingService.subscribeToMessages((msg) => {
+      if (msg.recipient_id === user.id) {
+        setUnreadCount(prev => prev + 1);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user]);
 
   const loadDataFromDatabase = async () => {
     try {
@@ -329,6 +355,9 @@ const App: React.FC = () => {
           setSearchQuery={setSearchQuery}
           onNewLead={startNewLead}
           error={error}
+          isMessagingOpen={isMessagingOpen}
+          setIsMessagingOpen={setIsMessagingOpen}
+          unreadCount={unreadCount}
         />
 
         <div className="max-w-[1700px] mx-auto">
@@ -339,6 +368,11 @@ const App: React.FC = () => {
           lead={selectedLead}
           onClose={() => setSelectedLead(null)}
           onUpdate={handleUpdateLead}
+        />
+
+        <MessagingPanel
+          isOpen={isMessagingOpen}
+          onClose={() => setIsMessagingOpen(false)}
         />
       </main>
 
