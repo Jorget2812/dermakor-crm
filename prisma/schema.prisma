@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @db.Uuid
+  fullName  String   @map("full_name")
+  role      String   // 'sales_rep', 'directeur', etc.
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  assignedProspects Prospect[] @relation("AssignedTo")
+  commissionPayouts CommissionPayout[]
+  auditLogs         AuditLog[]
+  
+  @@map("profiles")
+}
+
+// Using 'prospects' table as defined in utils/leads.ts
+model Prospect {
+  id                  String   @id @default(uuid()) @db.Uuid
+  companyName         String   @map("company_name")
+  canton              String
+  assignedTo          User?    @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId        String?  @map("assigned_to") @db.Uuid // Mapped to 'assigned_to' column
+  
+  // Fields from utils/leads.ts + new fields for commissions
+  pipelineStage       String   @map("pipeline_stage")
+  isClosed            Boolean  @default(false) @map("is_closed")
+  closeStatus         String?  @map("close_status")
+  closeDate           DateTime? @map("close_date")
+  finalDealValue      Decimal?  @map("final_deal_value") @db.Decimal(10,2)
+  chosenPlan          String?   @map("chosen_plan")
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  dealDetails         DealCommissionDetail[]
+  
+  @@map("prospects")
+}
+
+model CommissionRule {
+  id                        String   @id @default(uuid()) @db.Uuid
+  month                     Int
+  year                      Int
+  
+  standardCommissionPct     Decimal  @map("standard_commission_pct") @db.Decimal(5,2) @default(8.00)
+  standardVolumeBonusPct    Decimal  @map("standard_volume_bonus_pct") @db.Decimal(5,2) @default(2.00)
+  standardVolumeThreshold   Int      @map("standard_volume_threshold") @default(5)
+  
+  premiumCommissionPct      Decimal  @map("premium_commission_pct") @db.Decimal(5,2) @default(12.00)
+  premiumVolumeBonusPct     Decimal  @map("premium_volume_bonus_pct") @db.Decimal(5,2) @default(3.00)
+  premiumVolumeThreshold    Int      @map("premium_volume_threshold") @default(3)
+  
+  objectiveAmount           Decimal  @map("objective_amount") @db.Decimal(10,2) @default(30000)
+  bonus100_110              Decimal  @map("bonus_100_110") @db.Decimal(10,2) @default(500)
+  bonus111_125              Decimal  @map("bonus_111_125") @db.Decimal(10,2) @default(1000)
+  bonusAbove125             Decimal  @map("bonus_above_125") @db.Decimal(10,2) @default(1500)
+  
+  slaThresholdPct           Int      @map("sla_threshold_pct") @default(95)
+  slaBonusAmount            Decimal  @map("sla_bonus_amount") @db.Decimal(10,2) @default(300)
+  
+  firstPremiumBonus         Decimal  @map("first_premium_bonus") @db.Decimal(10,2) @default(200)
+  exclusivityBonus          Decimal  @map("exclusivity_bonus") @db.Decimal(10,2) @default(800)
+  largeDealThreshold        Decimal  @map("large_deal_threshold") @db.Decimal(10,2) @default(50000)
+  largeDealBonus            Decimal  @map("large_deal_bonus") @db.Decimal(10,2) @default(1200)
+  
+  isActive                  Boolean  @default(true) @map("is_active")
+  createdBy                 String   @map("created_by") @db.Uuid
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  
+  commissionPayouts         CommissionPayout[]
+  
+  @@unique([month, year])
+  @@map("commission_rules")
+}
+
+model CommissionPayout {
+  id                    String          @id @default(uuid()) @db.Uuid
+  vendeurId             String          @map("vendeur_id") @db.Uuid
+  vendeur               User            @relation(fields: [vendeurId], references: [id])
+  month                 Int
+  year                  Int
+  ruleId                String?         @map("rule_id") @db.Uuid
+  rule                  CommissionRule? @relation(fields: [ruleId], references: [id])
+  
+  totalRevenueClosed    Decimal  @map("total_revenue_closed") @db.Decimal(10,2) @default(0)
+  nbDealsStandard       Int      @map("nb_deals_standard") @default(0)
+  nbDealsPremium        Int      @map("nb_deals_premium") @default(0)
+  
+  commissionStandard    Decimal  @map("commission_standard") @db.Decimal(10,2) @default(0)
+  commissionPremium     Decimal  @map("commission_premium") @db.Decimal(10,2) @default(0)
+  bonusVolume           Decimal  @map("bonus_volume") @db.Decimal(10,2) @default(0)
+  bonusObjective        Decimal  @map("bonus_objective") @db.Decimal(10,2) @default(0)
+  bonusSla              Decimal  @map("bonus_sla") @db.Decimal(10,2) @default(0)
+  bonusSpecial          Decimal  @map("bonus_special") @db.Decimal(10,2) @default(0)
+  
+  totalCommission       Decimal  @map("total_commission") @db.Decimal(10,2) @default(0)
+  
+  status                String   @default("en_calcul") // Using String instead of enum for flexibility with existing DB
+  validatedBy           String?  @map("validated_by") @db.Uuid
+  validatedAt           DateTime? @map("validated_at")
+  paidAt                DateTime? @map("paid_at")
+  
+  notes                 String?
+  
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  dealDetails           DealCommissionDetail[]
+  
+  @@unique([vendeurId, month, year])
+  @@map("commission_payouts")
+}
+
+model DealCommissionDetail {
+  id                String   @id @default(uuid()) @db.Uuid
+  payoutId          String   @map("payout_id") @db.Uuid
+  payout            CommissionPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  prospectId        String   @map("prospect_id") @db.Uuid
+  prospect          Prospect @relation(fields: [prospectId], references: [id])
+  
+  dealNumber        String   @map("deal_number")
+  dealValue         Decimal  @map("deal_value") @db.Decimal(10,2)
+  dealPlan          String   @map("deal_plan")
+  closeDate         DateTime @map("close_date")
+  
+  commissionRate    Decimal  @map("commission_rate") @db.Decimal(5,2)
+  commissionAmount  Decimal  @map("commission_amount") @db.Decimal(10,2)
+  
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  @@map("deal_commission_details")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  user        User     @relation(fields: [userId], references: [id])
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id") @db.Uuid
+  oldValues   Json?    @map("old_values")
+  newValues   Json?    @map("new_values")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@map("audit_logs")
+}

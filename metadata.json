@@ -1,0 +1,7 @@
+{
+  "name": "DermaKor Swiss CRM - Strategic Partner Pipeline",
+  "description": "A premium B2B CRM designed for DermaKor Swiss Sàrl to manage KRX Aesthetics distribution, featuring advanced scoring, territorial tracking, and partner tier classification.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
