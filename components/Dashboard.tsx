@@ -202,7 +202,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
     <div className="space-y-10 pb-12 animate-in fade-in duration-700">
 
       {/* KPI Section 1: Top Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         <div className="luxury-card p-6 shadow-2xl hover:border-[#D4AF37]/50 transition-all group">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-white/5 rounded-2xl text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black transition-all">
@@ -240,7 +240,7 @@ const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
       </div>
 
       {/* KPI Section 2: Efficiency Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         <div className="bg-[#1C1F26] p-6 rounded-2xl border border-white/5 shadow-2xl">
           <p className="text-[#9E9E96] text-[10px] font-black uppercase tracking-widest mb-2 opacity-60">Taux de Conversion</p>
           <div className="flex items-end gap-3">
@@ -298,10 +298,10 @@ const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
       </div>
 
       {/* Main Charts & Tables Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-2 gap-8">
 
         {/* Top Opportunités Table */}
-        <div className="col-span-1 lg:col-span-2 luxury-card overflow-hidden shadow-2xl">
+        <div className="col-span-2 luxury-card overflow-hidden shadow-2xl">
           <div className="px-8 py-5 bg-white/5 border-b border-white/5 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Zap size={18} className="text-[#D4AF37]" />

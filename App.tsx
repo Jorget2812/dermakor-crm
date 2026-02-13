@@ -41,7 +41,7 @@ const KanbanColumn: React.FC<{
   const columnLeads = leads.filter(l => l.pipelineStage === stage);
 
   return (
-    <div key={stage} className="flex-shrink-0 w-full md:w-[320px] flex flex-col gap-4">
+    <div key={stage} className="flex-shrink-0 w-[320px] flex flex-col gap-4">
       {/* Column Header */}
       <div className="flex items-center justify-between px-5 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl shadow-2xl">
         <div className="flex items-center gap-3">
@@ -97,7 +97,6 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Load leads and vendedores from Supabase on mount
   useEffect(() => {
@@ -251,7 +250,7 @@ const App: React.FC = () => {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex flex-col md:flex-row gap-6 overflow-x-auto md:overflow-x-visible pb-8 h-auto md:h-[calc(100vh-220px)] custom-scrollbar">
+            <div className="flex gap-6 overflow-x-auto pb-8 h-[calc(100vh-220px)] custom-scrollbar">
               {Object.values(PipelineStage).map((stage) => (
                 <KanbanColumn
                   key={stage}
@@ -322,23 +321,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0F1115] text-white font-sans selection:bg-[#D4AF37]/20 selection:text-[#D4AF37]">
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          setIsSidebarOpen(false);
-        }} 
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <main className="ml-0 md:ml-[240px] px-4 md:px-12 py-10 min-h-screen">
+      <main className="ml-[240px] px-12 py-10 min-h-screen">
         <Header
           activeTab={activeTab}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onNewLead={startNewLead}
-          onMenuToggle={() => setIsSidebarOpen(true)}
           error={error}
         />
 
