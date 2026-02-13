@@ -122,7 +122,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 35, stiffness: 200 }}
-          className="relative w-[850px] bg-[#1C1F26] h-screen shadow-2xl flex flex-col pointer-events-auto border-l border-[#D4AF37]/20"
+          className="relative w-full md:w-[850px] bg-[#1C1F26] h-screen shadow-2xl flex flex-col pointer-events-auto border-l border-[#D4AF37]/20"
         >
           {/* Executive Header */}
           <div className="bg-[#0F1115] px-10 py-10 text-white relative flex justify-between items-start overflow-hidden border-b border-[#2D323B]">
@@ -154,7 +154,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex border-b border-[#2D323B] bg-[#1C1F26] px-10 sticky top-0 z-20">
+          <div className="flex border-b border-[#2D323B] bg-[#1C1F26] px-4 md:px-10 sticky top-0 z-20 overflow-x-auto no-scrollbar">
             {[
               { id: 'profil', label: 'Profil Partner', icon: Building2 },
               { id: 'pipeline', label: 'Stratégie SQL', icon: Target },
@@ -181,13 +181,13 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
           {/* Form Content */}
           <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0F1115]/30">
             {error && (
-              <div className="mx-10 mt-6 bg-[#EF4444]/10 border border-[#EF4444]/20 p-5 rounded-2xl flex items-center gap-3 animate-in fade-in duration-300">
+              <div className="mx-4 md:mx-10 mt-6 bg-[#EF4444]/10 border border-[#EF4444]/20 p-5 rounded-2xl flex items-center gap-3 animate-in fade-in duration-300">
                 <AlertCircle className="text-[#EF4444]" size={20} />
                 <p className="text-[#EF4444] text-xs font-black uppercase tracking-widest">{error}</p>
               </div>
             )}
 
-            <div className="p-10 space-y-12">
+            <div className="p-4 md:p-10 space-y-12">
               {/* TAB: PROFIL */}
               {activeTab === 'profil' && (
                 <div className="space-y-12">
@@ -197,7 +197,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
                       <div className="w-1.5 h-6 bg-[#D4AF37] rounded-full shadow-[0_0_8px_#D4AF37]"></div>
                       <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">Identité Corporate Elite</h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="col-span-2">
                         <label className="block text-[10px] font-black text-[#6B6B63] uppercase tracking-widest mb-3">Raison Sociale</label>
                         <input
@@ -316,7 +316,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
                       </div>
 
                       {isDirector && (
-                        <div className="col-span-6 pt-6 border-t border-white/5">
+                        <div className="col-span-1 md:col-span-6 pt-6 border-t border-white/5">
                           <label className="block text-[10px] font-black text-[#D4AF37] uppercase tracking-[.3em] mb-4 flex items-center gap-2">
                             <UserPlus size={14} />
                             Collaborateur Assigné
@@ -353,7 +353,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
               {activeTab === 'pipeline' && (
                 <div className="space-y-10">
                   {/* Status & Value */}
-                  <div className="grid grid-cols-2 gap-8 bg-[#0F1115] p-10 rounded-[32px] text-white border border-[#D4AF37]/20 shadow-2xl">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#0F1115] p-6 md:p-10 rounded-[32px] text-white border border-[#D4AF37]/20 shadow-2xl">
                     <div className="space-y-4">
                       <label className="block text-[10px] font-black text-[#6B6B63] uppercase tracking-[0.3em]">Étape du Cycle SQL</label>
                       <select
@@ -508,7 +508,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
           </div>
 
           {/* Fixed Footer Actions */}
-          <div className="bg-[#0F1115] border-t border-[#2D323B] px-10 py-8 flex items-center justify-between">
+          <div className="bg-[#0F1115] border-t border-[#2D323B] px-4 md:px-10 py-6 md:py-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <button
               onClick={onClose}
               className="text-[#6B6B63] hover:text-white font-black text-[10px] uppercase tracking-[0.3em] transition-all"

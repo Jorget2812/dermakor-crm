@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import {
+  X,
   LayoutDashboard,
   Zap,
   MapPin,
@@ -16,6 +16,8 @@ import { supabase } from '../utils/supabase';
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface UserProfile {
@@ -63,7 +65,25 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   };
 
   return (
-    <div className="w-[240px] glass-sidebar h-screen flex flex-col fixed left-0 top-0 z-50 shadow-2xl shadow-black/50">
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <div className={`w-[240px] glass-sidebar h-screen flex flex-col fixed left-0 top-0 z-[60] shadow-2xl transition-transform duration-300 md:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* Close Button (Mobile Only) */}
+        <button 
+          onClick={onClose}
+          className="md:hidden absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-white/5 rounded-full text-white"
+        >
+          <X size={18} />
+        </button>
       {/* Logo Section */}
       <div className="p-8">
         <div className="flex items-center gap-4 mb-2">
@@ -134,7 +154,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
