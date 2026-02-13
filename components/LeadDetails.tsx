@@ -394,12 +394,12 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
                         value={newObjection}
                         onChange={(e) => setNewObjection(e.target.value)}
                         placeholder="Ex: Prix trop élevé, Déjà équipé..."
-                        className="flex-1 px-5 py-3 bg-white border border-executive-neutral-200 rounded-xl text-sm font-medium outline-none"
+                        className="flex-1 px-5 py-3 bg-[#1C1F26] border border-[#2D323B] rounded-xl text-sm font-medium text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/20 placeholder:text-[#6B6B63]"
                         onKeyPress={(e) => e.key === 'Enter' && addObjection()}
                       />
                       <button
                         onClick={addObjection}
-                        className="bg-executive-neutral-800 text-white px-5 py-3 rounded-xl hover:bg-executive-neutral-700 transition-colors"
+                        className="bg-[#D4AF37] text-black px-5 py-3 rounded-xl hover:bg-[#A68F54] transition-colors active:scale-95"
                       >
                         <Tag size={18} />
                       </button>
@@ -407,7 +407,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
 
                     <div className="flex flex-wrap gap-2">
                       {editedLead.objections?.map((obj, i) => (
-                        <div key={i} className="flex items-center gap-2 bg-executive-neutral-100 text-executive-neutral-700 px-3 py-1.5 rounded-full text-xs font-bold border border-executive-neutral-200">
+                        <div key={i} className="flex items-center gap-2 bg-[#D4AF37]/10 text-[#D4AF37] px-3 py-1.5 rounded-full text-xs font-bold border border-[#D4AF37]/20">
                           {obj}
                           <button onClick={() => removeObjection(i)} className="text-executive-neutral-400 hover:text-status-error"><X size={14} /></button>
                         </div>
@@ -422,7 +422,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
                       value={editedLead.strategicNotes || ''}
                       onChange={(e) => handleChange('strategicNotes', e.target.value)}
                       rows={8}
-                      className="w-full px-6 py-5 bg-white border border-executive-neutral-200 rounded-[32px] text-sm font-medium outline-none focus:ring-2 focus:ring-executive-gold-500/20 italic text-executive-neutral-700"
+                      className="w-full px-6 py-5 bg-[#1C1F26] border border-[#2D323B] rounded-[32px] text-sm font-medium text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all placeholder:text-[#6B6B63] placeholder:italic"
                       placeholder="Décrivez l'approche commerciale, les besoins spécifiques..."
                     />
                   </section>
@@ -434,17 +434,26 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
                 <div className="space-y-8">
                   {/* Quick Activity Button */}
                   <div className="flex gap-4 mb-4">
-                    <button className="flex-1 py-4 bg-white border border-executive-neutral-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-executive-gold-500 transition-all group">
-                      <Phone size={20} className="text-executive-neutral-400 group-hover:text-executive-gold-500" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-executive-neutral-500">Log Appel</span>
+                    <button
+                      onClick={() => alert('Fonction Log Appel - En développement')}
+                      className="flex-1 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37] transition-all group"
+                    >
+                      <Phone size={20} className="text-[#6B6B63] group-hover:text-[#D4AF37]" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#6B6B63] group-hover:text-[#D4AF37]">Log Appel</span>
                     </button>
-                    <button className="flex-1 py-4 bg-white border border-executive-neutral-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-executive-gold-500 transition-all group">
-                      <Mail size={20} className="text-executive-neutral-400 group-hover:text-executive-gold-500" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-executive-neutral-500">Send Email</span>
+                    <button
+                      onClick={() => alert('Fonction Send Email - En développement')}
+                      className="flex-1 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37] transition-all group"
+                    >
+                      <Mail size={20} className="text-[#6B6B63] group-hover:text-[#D4AF37]" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#6B6B63] group-hover:text-[#D4AF37]">Send Email</span>
                     </button>
-                    <button className="flex-1 py-4 bg-white border border-executive-neutral-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-executive-gold-500 transition-all group">
-                      <Zap size={20} className="text-executive-neutral-400 group-hover:text-executive-gold-500" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-executive-neutral-500">Quick Demo</span>
+                    <button
+                      onClick={() => alert('Fonction Quick Demo - En développement')}
+                      className="flex-1 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37] transition-all group"
+                    >
+                      <Zap size={20} className="text-[#6B6B63] group-hover:text-[#D4AF37]" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#6B6B63] group-hover:text-[#D4AF37]">Quick Demo</span>
                     </button>
                   </div>
 

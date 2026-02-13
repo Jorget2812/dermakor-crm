@@ -30,47 +30,52 @@ const Header: React.FC<HeaderProps> = ({
     };
 
     return (
-        <header className="flex justify-between items-center mb-10 animate-in slide-in-from-top-4 duration-500">
-            <div>
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6 lg:mb-10 animate-in slide-in-from-top-4 duration-500">
+            {/* Title Section */}
+            <div className="w-full lg:w-auto">
                 <div className="flex items-center gap-2 mb-2">
                     <span className="h-[2px] w-6 bg-[#D4AF37]"></span>
-                    <p className="text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.3em] opacity-80">DermaKor Swiss Elite</p>
+                    <p className="text-[#D4AF37] text-[9px] lg:text-[10px] font-black uppercase tracking-[0.3em] opacity-80">DermaKor Swiss Elite</p>
                 </div>
-                <h1 className="text-4xl font-black text-white tracking-tight">
+                <h1 className="text-2xl lg:text-4xl font-black text-white tracking-tight">
                     {getTabTitle()}
                 </h1>
-                <p className="text-[#9E9E96] text-xs mt-1 font-semibold tracking-wide">
+                <p className="text-[#9E9E96] text-[10px] lg:text-xs mt-1 font-semibold tracking-wide">
                     Sistema de Pilotaje Comercial Estratégico
                 </p>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* Actions Section */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 w-full lg:w-auto">
                 {/* Search */}
-                <div className="relative group">
+                <div className="relative group w-full lg:w-80">
                     <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B6B63] group-focus-within:text-[#D4AF37] transition-colors" />
                     <input
                         type="text"
-                        placeholder="Rechercher partenaire o región..."
-                        className="pl-12 pr-6 py-3 bg-[#1C1F26] border border-[#2D323B] rounded-2xl text-sm font-bold text-white placeholder-[#6B6B63] outline-none w-80 focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all shadow-2xl shadow-black/20"
+                        placeholder="Rechercher..."
+                        className="pl-12 pr-6 py-3 bg-[#1C1F26] border border-[#2D323B] rounded-2xl text-sm font-bold text-white placeholder-[#6B6B63] outline-none w-full focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all shadow-2xl shadow-black/20"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
 
-                {/* Notifications */}
-                <button className="relative p-3 bg-[#1C1F26] border border-[#2D323B] rounded-xl text-[#9E9E96] hover:text-white hover:border-[#D4AF37]/50 transition-all shadow-xl">
-                    <Bell size={18} />
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-[#1C1F26]"></span>
-                </button>
+                {/* Buttons Container */}
+                <div className="flex items-center gap-3">
+                    {/* Notifications */}
+                    <button className="relative p-3 bg-[#1C1F26] border border-[#2D323B] rounded-xl text-[#9E9E96] hover:text-white hover:border-[#D4AF37]/50 transition-all shadow-xl">
+                        <Bell size={18} />
+                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-[#1C1F26]"></span>
+                    </button>
 
-                {/* Action Button */}
-                <button
-                    onClick={onNewLead}
-                    className="btn-gold flex items-center gap-2 shadow-xl shadow-black/30"
-                >
-                    <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
-                    <span className="tracking-widest">Nouveau Prospect</span>
-                </button>
+                    {/* Action Button */}
+                    <button
+                        onClick={onNewLead}
+                        className="btn-gold flex items-center gap-2 shadow-xl shadow-black/30 flex-1 lg:flex-initial justify-center"
+                    >
+                        <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+                        <span className="tracking-widest text-xs lg:text-sm">Nouveau</span>
+                    </button>
+                </div>
             </div>
         </header>
     );

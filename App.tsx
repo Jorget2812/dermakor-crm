@@ -174,13 +174,12 @@ const App: React.FC = () => {
 
       setSelectedLead(null);
       setError('');
-
-      // Optionally reload data to be 100% sure we are in sync with any DB triggers
-      // but the instant state update above handles the "no reload" requirement.
+      return savedLead;
     } catch (err: any) {
       console.error('Error saving lead:', err);
       const errorMessage = err.message || "Erreur lors de l'enregistrement";
       setError(`Supabase Error: ${errorMessage}`);
+      throw err;
     }
   };
 

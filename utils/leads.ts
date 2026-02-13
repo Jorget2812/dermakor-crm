@@ -56,6 +56,7 @@ export interface DatabaseProspect {
     objections: string[];
     strategic_notes?: string;
 
+    owner_id?: string;
     created_at?: string;
     updated_at?: string;
     last_activity_at?: string;
@@ -175,7 +176,8 @@ const toDatabase = (p: Prospect): Partial<DatabaseProspect> => {
 
         strategic_notes: p.strategicNotes,
         updated_at: new Date().toISOString(),
-        pipeline_stage: p.pipelineStage
+        pipeline_stage: p.pipelineStage,
+        objections: p.objections || []
     };
 
     // Only include ID if it's a valid UUID
@@ -201,8 +203,24 @@ export const fetchLeads = async (): Promise<Prospect[]> => {
 
 export const createLead = async (prospect: Prospect, userId: string): Promise<Prospect> => {
     const dbData = toDatabase(prospect);
-    // Always force assigned_to_id to the current user on creation
-    dbData.assigned_to_id = userId;
+    // Always force owner_id to the current user on creation
+    (dbData as any).owner_id = userId;
+
+    // Check if assigned_to_id matches a user in the legacy 'users' table
+    // For now, if it fails, we want the error to be visible.
+    // However, if the current user is NOT in the 'users' table, 
+    // we should set assigned_to_id to null to avoid FK violation.
+    const { data: userExists } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+    if (!userExists) {
+        dbData.assigned_to_id = null;
+    } else {
+        dbData.assigned_to_id = userId;
+    }
 
     const { data, error } = await supabase
         .from('prospects')
