@@ -23,24 +23,18 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            // Separar React y sus dependencias
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            // Separar Supabase
+            'react-vendor': ['react', 'react-dom'],
             'supabase-vendor': ['@supabase/supabase-js'],
-            // Separar iconos
             'icons-vendor': ['lucide-react'],
-            // Separar utilidades de fecha
-            'date-vendor': ['date-fns'],
+            'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable'],
           }
         }
       },
-      // Aumentar el límite de advertencia (temporal, pero reduce warnings)
       chunkSizeWarningLimit: 1000,
-      // Mejorar la minificación
       minify: 'terser',
       terserOptions: {
         compress: {
-          drop_console: true, // Elimina console.logs en producción
+          drop_console: true,
         }
       }
     }
