@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  Target, 
-  TrendingUp, 
-  DollarSign, 
-  GraduationCap, 
-  Map, 
+import {
+  LayoutDashboard,
+  Target,
+  TrendingUp,
+  DollarSign,
+  GraduationCap,
+  Map,
   Settings,
   Menu,
-  X
+  X,
+  LogOut,
+  CheckCircle2,
+  User
 } from 'lucide-react';
+import { useAuth } from './AuthProvider';
 
 interface SidebarProps {
   activeTab: string;
@@ -18,20 +22,25 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { profile, role, signOut, user } = useAuth();
 
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'pipeline', icon: Target, label: 'Pipeline' },
-    { id: 'performance', icon: TrendingUp, label: 'Performance' },
-    { id: 'commissions', icon: DollarSign, label: 'Commissions' },
-    { id: 'academy', icon: GraduationCap, label: 'Academy' },
-    { id: 'map', icon: Map, label: 'Carte Suisse' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
+    { id: 'pipeline', icon: Target, label: 'Pipeline Stratégique' },
+    { id: 'performance', icon: TrendingUp, label: 'Performance Analytics' },
+    { id: 'commissions', icon: DollarSign, label: 'Commissions Management' },
+    { id: 'academy', icon: GraduationCap, label: 'DermaKor Academy' },
+    { id: 'map', icon: Map, label: 'Vue Territoriale' },
+    { id: 'settings', icon: Settings, label: 'Configuration' },
   ];
 
   const handleTabClick = (tab: string) => {
     setActiveTab(tab);
-    setIsOpen(false); // Cierra el sidebar en móvil al seleccionar
+    setIsOpen(false);
+  };
+
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
   };
 
   return (
@@ -82,11 +91,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all group ${
-                activeTab === item.id
-                  ? 'bg-[#D4AF37] text-black shadow-2xl shadow-[#D4AF37]/20'
-                  : 'text-[#9E9E96] hover:bg-white/5 hover:text-white'
-              }`}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all group ${activeTab === item.id
+                ? 'bg-[#D4AF37] text-black shadow-2xl shadow-[#D4AF37]/20'
+                : 'text-[#9E9E96] hover:bg-white/5 hover:text-white'
+                }`}
             >
               <item.icon
                 size={18}
@@ -97,11 +105,45 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="pt-6 border-t border-white/5">
-          <p className="text-[8px] text-[#6B6B63] font-black uppercase tracking-[0.3em] text-center">
-            Excellence 2025
-          </p>
+        {/* Footer / User Profile */}
+        <div className="mt-auto pt-6 border-t border-white/5 space-y-6">
+          <div className="flex flex-col gap-4">
+            <p className="text-[9px] font-black text-[#6B6B63] uppercase tracking-[0.2em]">
+              BIENVENUE, {(role === 'directeur' || role === 'director') ? 'RESP.' : 'COLLAB.'}
+            </p>
+
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#1C1F26] border border-[#2D323B] flex items-center justify-center text-[#D4AF37] font-black text-xs shadow-xl ring-1 ring-[#D4AF37]/10">
+                {profile?.full_name ? getInitials(profile.full_name) : <User size={16} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-[11px] font-black text-white truncate uppercase tracking-tight">
+                  {profile?.full_name || user?.email?.split('@')[0] || 'Utilisateur'}
+                </h4>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 size={10} className="text-[#D4AF37]" />
+                  <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest whitespace-nowrap">
+                    {(role === 'directeur' || role === 'director') ? 'Responsable' : 'Collaboreur'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
+            <div className="flex gap-2">
+              <span className="text-[9px] font-black text-[#6B6B63] hover:text-white cursor-pointer transition-colors">FR</span>
+              <span className="text-[9px] font-black text-[#6B6B63] hover:text-white cursor-pointer transition-colors">DE</span>
+              <span className="text-[9px] font-black text-[#6B6B63] hover:text-white cursor-pointer transition-colors">IT</span>
+            </div>
+            <button
+              onClick={() => signOut()}
+              className="p-2 text-[#6B6B63] hover:text-[#EF4444] transition-all hover:scale-110"
+              title="Déconnexion"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </aside>
     </>

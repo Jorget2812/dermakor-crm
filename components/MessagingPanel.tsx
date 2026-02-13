@@ -64,7 +64,12 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ isOpen, onClose }) => {
                     (msg.sender_id === selectedContact.id && msg.recipient_id === user?.id) ||
                     (msg.sender_id === user?.id && msg.recipient_id === selectedContact.id)
                 )) {
-                    setMessages(prev => [...prev, msg]);
+                    // Avoid duplicates if optimistic update already added it
+                    setMessages(prev => {
+                        if (prev.find(m => m.id === msg.id)) return prev;
+                        return [...prev, msg];
+                    });
+
                     if (msg.recipient_id === user?.id) {
                         messagingService.markAsRead(msg.sender_id);
                     }
@@ -110,13 +115,21 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ isOpen, onClose }) => {
         e.preventDefault();
         if (!newMessage.trim() || !selectedContact || sending) return;
 
+        const content = newMessage.trim();
+        setNewMessage(''); // Clear immediately for better UX
         setSending(true);
+
         try {
-            await messagingService.sendMessage(selectedContact.id, newMessage.trim());
-            setNewMessage('');
-            // Note: Update happens via real-time subscription
+            const sentMsg = await messagingService.sendMessage(selectedContact.id, content);
+
+            // Optimistic update: Add message to list immediately
+            setMessages(prev => {
+                if (prev.find(m => m.id === sentMsg.id)) return prev;
+                return [...prev, sentMsg];
+            });
         } catch (err) {
             console.error('Error sending message:', err);
+            setNewMessage(content); // Restore message on error
         } finally {
             setSending(false);
         }
@@ -211,8 +224,8 @@ const MessagingPanel: React.FC<MessagingPanelProps> = ({ isOpen, onClose }) => {
                                                     className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                                                 >
                                                     <div className={`max-w-[85%] rounded-2xl p-4 shadow-xl ${msg.sender_id === user?.id
-                                                            ? 'bg-[#D4AF37] text-[#1C1F26] rounded-tr-none'
-                                                            : 'bg-[#1C1F26] text-white border border-[#2D323B] rounded-tl-none'
+                                                        ? 'bg-[#D4AF37] text-[#1C1F26] rounded-tr-none'
+                                                        : 'bg-[#1C1F26] text-white border border-[#2D323B] rounded-tl-none'
                                                         }`}>
                                                         <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
                                                         <div className={`flex items-center gap-1.5 mt-2 ${msg.sender_id === user?.id ? 'text-[#1C1F26]/60' : 'text-[#6B6B63]'

@@ -27,7 +27,7 @@ import SwissMap from './components/SwissMap';
 import Settings from './components/Settings';
 import MessagingPanel from './components/MessagingPanel';
 import { useAuth } from './components/AuthProvider';
-import { fetchLeads, createLead, updateLead, fetchCollaborators } from './utils/leads';
+import { fetchLeads, createLead, updateLead, deleteLead, fetchCollaborators } from './utils/leads';
 import { messagingService } from './services/messagingService';
 
 const KanbanColumn: React.FC<{
@@ -205,6 +205,19 @@ const App: React.FC = () => {
       console.error('Error saving lead:', err);
       const errorMessage = err.message || "Erreur lors de l'enregistrement";
       setError(`Supabase Error: ${errorMessage}`);
+      throw err;
+    }
+  };
+
+  const handleDeleteLead = async (id: string) => {
+    try {
+      await deleteLead(id);
+      setLeads(prev => prev.filter(l => l.id !== id));
+      setSelectedLead(null);
+      setError('');
+    } catch (err: any) {
+      console.error('Error deleting lead:', err);
+      setError(`Supabase Error: ${err.message || "Erreur lors de la suppression"}`);
       throw err;
     }
   };

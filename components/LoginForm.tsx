@@ -68,7 +68,7 @@ const LoginForm: React.FC = () => {
                             onClick={() => setLoginRole(UserRole.DIRECTEUR)}
                             className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center ${loginRole === UserRole.DIRECTEUR ? 'bg-[#1C1F26] text-[#D4AF37] shadow-xl border border-[#D4AF37]/20' : 'text-[#6B6B63] hover:text-white'}`}
                         >
-                            <Shield size={14} /> Directeur
+                            <Shield size={14} /> Responsable
                         </button>
                     </div>
                 </div>
@@ -124,7 +124,7 @@ const LoginForm: React.FC = () => {
                                 <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
                             ) : (
                                 <>
-                                    {loginRole === UserRole.DIRECTEUR ? 'Accès Direction' : 'Accès Collaborateur'}
+                                    {loginRole === UserRole.DIRECTEUR ? 'Accès Responsable' : 'Accès Collaborateur'}
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}

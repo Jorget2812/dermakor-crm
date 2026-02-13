@@ -17,7 +17,8 @@ import {
   AlertCircle,
   TrendingUp,
   Tag,
-  UserPlus
+  UserPlus,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthProvider';
@@ -38,18 +39,20 @@ interface LeadDetailsProps {
   lead: Prospect | null;
   onClose: () => void;
   onUpdate: (lead: Prospect) => void;
+  onDelete?: (id: string) => void;
 }
 
-const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) => {
+const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate, onDelete }) => {
   const [activeTab, setActiveTab] = useState<'profil' | 'pipeline' | 'activities' | 'documents'>('profil');
   const [editedLead, setEditedLead] = useState<Prospect | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [newObjection, setNewObjection] = useState('');
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const { role } = useAuth();
 
-  const isDirector = role === 'director' || role === 'directeur';
+  const isDirector = role === 'director' || role === 'directeur'; // Affiché comme 'Responsable' dans l'UI
 
   useEffect(() => {
     if (isDirector) {
@@ -90,6 +93,20 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
       setError(err.message || "Erreur lors de l'enregistrement.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!lead || !onDelete || !window.confirm("Êtes-vous sûr de vouloir supprimer ce prospect ? Cette action est irréversible.")) return;
+
+    setDeleting(true);
+    setError('');
+    try {
+      await onDelete(lead.id);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de la suppression.");
+      setDeleting(false);
     }
   };
 
@@ -526,9 +543,21 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate }) =>
             </button>
 
             <div className="flex items-center gap-6">
+              {isDirector && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting || saving}
+                  className="p-4 text-[#EF4444] hover:bg-[#EF4444]/10 rounded-2xl transition-all border border-[#EF4444]/20 flex items-center gap-2 group disabled:opacity-50"
+                  title="Supprimer définitivement"
+                >
+                  <Trash2 size={20} className="group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">Supprimer</span>
+                </button>
+              )}
+
               <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || deleting}
                 className="btn-gold flex items-center gap-3 px-10 py-4 shadow-2xl shadow-black/50 active:scale-95 disabled:opacity-50 group"
               >
                 {saving ? (
