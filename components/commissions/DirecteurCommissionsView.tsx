@@ -1,21 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Save, Copy, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Settings, Save, Copy, CheckCircle2, Users, Sliders } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { commissionsService } from '../../services/commissions/commissionsService';
-import { CommissionRule } from '../../services/commissions/types';
+import { userService } from '../../services/userService';
+import { CommissionRule, User } from '../../services/commissions/types';
 import ValidationPayoutsTab from './ValidationPayoutsTab';
 
 export default function DirecteurCommissionsView() {
-    const [activeTab, setActiveTab] = useState<'config' | 'validation'>('config');
+    const [activeTab, setActiveTab] = useState<'config' | 'validation' | 'vendeurs'>('config');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [rule, setRule] = useState<Partial<CommissionRule>>({});
+    const [sellers, setSellers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [editingSeller, setEditingSeller] = useState<string | null>(null);
+    const [tempRate, setTempRate] = useState<number>(20);
 
     useEffect(() => {
-        loadRule();
-    }, [selectedMonth, selectedYear]);
+        if (activeTab === 'config') loadRule();
+        if (activeTab === 'vendeurs') loadSellers();
+    }, [selectedMonth, selectedYear, activeTab]);
+
+    async function loadSellers() {
+        setLoading(true);
+        try {
+            const data = await userService.getSellers();
+            setSellers(data);
+        } catch (err) {
+            console.error(err);
+            setError('Erreur lors du chargement des vendeurs');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function updateSellerRate(userId: string, rate: number) {
+        try {
+            setLoading(true);
+            await userService.updateCommissionPercentage(userId, rate);
+            await loadSellers();
+            setEditingSeller(null);
+        } catch (err: any) {
+            alert('Erreur: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     async function loadRule() {
         setLoading(true);
@@ -133,15 +163,15 @@ export default function DirecteurCommissionsView() {
                     )}
                 </button>
                 <button
-                    onClick={() => setActiveTab('validation')}
-                    className={`pb-5 pt-6 px-1 flex items-center gap-3 transition-all relative ${activeTab === 'validation'
+                    onClick={() => setActiveTab('vendeurs')}
+                    className={`pb-5 pt-6 px-1 flex items-center gap-3 transition-all relative ${activeTab === 'vendeurs'
                         ? 'text-[#D4AF37]'
                         : 'text-[#6B6B63] hover:text-white'
                         }`}
                 >
-                    <CheckCircle2 size={18} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Validation Versement</span>
-                    {activeTab === 'validation' && (
+                    <Users size={18} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Gestion Vendeurs</span>
+                    {activeTab === 'vendeurs' && (
                         <motion.div layoutId="commTab" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-[#D4AF37] shadow-[0_0_15px_#D4AF37]" />
                     )}
                 </button>
@@ -302,6 +332,76 @@ export default function DirecteurCommissionsView() {
 
             {activeTab === 'validation' && (
                 <ValidationPayoutsTab month={selectedMonth} year={selectedYear} />
+            )}
+
+            {activeTab === 'vendeurs' && (
+                <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+                    <div className="luxury-card overflow-hidden">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-white/5 border-b border-white/10">
+                                    <th className="p-6 text-left text-[10px] font-black text-[#6B6B63] uppercase tracking-[0.3em]">Utilisateur</th>
+                                    <th className="p-6 text-left text-[10px] font-black text-[#6B6B63] uppercase tracking-[0.3em]">Rôle Actuel</th>
+                                    <th className="p-6 text-center text-[10px] font-black text-[#6B6B63] uppercase tracking-[0.3em]">Taux Perso (%)</th>
+                                    <th className="p-6 text-right text-[10px] font-black text-[#6B6B63] uppercase tracking-[0.3em]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {sellers.map(seller => (
+                                    <tr key={seller.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="p-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#A68F54] flex items-center justify-center font-black text-black">
+                                                    {seller.fullName ? seller.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-white text-sm uppercase">{seller.fullName}</p>
+                                                    <p className="text-[9px] text-[#6B6B63] font-black">ID: {seller.id.substring(0, 8)}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-6">
+                                            <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black text-[#D4AF37] uppercase tracking-widest">
+                                                {seller.role}
+                                            </span>
+                                        </td>
+                                        <td className="p-6 text-center">
+                                            {editingSeller === seller.id ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        value={tempRate}
+                                                        onChange={e => setTempRate(Number(e.target.value))}
+                                                        className="w-16 bg-[#0F1115] border border-[#D4AF37]/50 rounded-lg px-2 py-1 text-center font-black text-[#D4AF37] outline-none"
+                                                        autoFocus
+                                                    />
+                                                    <button onClick={() => updateSellerRate(seller.id, tempRate)} className="text-[#D4AF37] hover:scale-110 transition-transform">
+                                                        <Save size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-center gap-2 group-hover:text-[#D4AF37] transition-colors">
+                                                    <span className="font-black text-lg">{seller.commissionPercentage || 20}%</span>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="p-6 text-right">
+                                            <button
+                                                onClick={() => {
+                                                    setEditingSeller(seller.id);
+                                                    setTempRate(seller.commissionPercentage || 20);
+                                                }}
+                                                className="p-3 bg-white/5 hover:bg-[#D4AF37]/20 rounded-xl text-[#6B6B63] hover:text-[#D4AF37] transition-all"
+                                            >
+                                                <Sliders size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             )}
         </div>
     );

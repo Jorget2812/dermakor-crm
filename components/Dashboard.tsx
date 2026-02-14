@@ -22,7 +22,7 @@ import {
   Bar,
   Cell
 } from 'recharts';
-import { Prospect, PipelineStage, PotentialMonthly } from '../types';
+import { Prospect, PipelineStage, PotentialMonthly, Sale } from '../types';
 import { supabase } from '../utils/supabase';
 
 interface DashboardProps {
@@ -31,27 +31,51 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
   const [sellerNames, setSellerNames] = useState<Record<string, string>>({});
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loadingSales, setLoadingSales] = useState(true);
 
-  // Fetch seller names
+  // Fetch seller names and sales data
   useEffect(() => {
-    const fetchSellers = async () => {
-      const userIds = Array.from(new Set(leads.map(l => l.assignedTo).filter(Boolean))) as string[];
-      if (userIds.length === 0) return;
+    const loadDashboardStats = async () => {
+      setLoadingSales(true);
+      try {
+        // 1. Fetch sales
+        const { data: salesData } = await supabase
+          .from('sales')
+          .select('*')
+          .order('sale_date', { ascending: false });
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
+        if (salesData) {
+          setSales(salesData as any[]);
+        }
 
-      if (data) {
-        const names: Record<string, string> = {};
-        data.forEach((p: any) => {
-          names[p.id] = p.full_name;
-        });
-        setSellerNames(names);
+        // 2. Fetch seller names
+        const userIds = Array.from(new Set(leads.map(l => l.assignedTo).filter(Boolean))) as string[];
+        const sellerIdsFromSales = Array.from(new Set((salesData || []).map((s: any) => s.seller_id).filter(Boolean))) as string[];
+        const allUserIds = Array.from(new Set([...userIds, ...sellerIdsFromSales]));
+
+        if (allUserIds.length > 0) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', allUserIds);
+
+          if (profileData) {
+            const names: Record<string, string> = {};
+            profileData.forEach((p: any) => {
+              names[p.id] = p.full_name;
+            });
+            setSellerNames(names);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
+        setLoadingSales(false);
       }
     };
-    fetchSellers();
+
+    loadDashboardStats();
   }, [leads]);
 
   // --- Strategic Calculations ---
@@ -79,10 +103,16 @@ const Dashboard: React.FC<DashboardProps> = ({ leads }) => {
     return sum + (val * (prob / 100));
   }, 0);
 
-  // 3. CA Fermé MTD (Real calculation)
+  // 3. CA Fermé MTD (Using both Leads and Sales table for accuracy)
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const caClosedMTD = leads
+  const startOfMonthISO = startOfMonth.toISOString().split('T')[0];
+
+  const caFromSales = sales
+    .filter(s => s.status !== 'cancelled' && s.saleDate >= startOfMonthISO)
+    .reduce((sum, s) => sum + Number(s.saleAmount || 0), 0);
+
+  const caClosedMTD = caFromSales || leads
     .filter(l => l.closeStatus === 'gagne' && l.closeDate && new Date(l.closeDate) >= startOfMonth)
     .reduce((sum, l) => sum + Number(l.finalDealValue || 0), 0);
 

@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
     { id: 'pipeline', icon: Target, label: 'Pipeline Stratégique' },
     { id: 'performance', icon: TrendingUp, label: 'Performance Analytics' },
-    { id: 'commissions', icon: DollarSign, label: 'Commissions Management' },
+    { id: 'commissions', icon: DollarSign, label: 'Commissions' },
     { id: 'academy', icon: GraduationCap, label: 'DermaKor Academy' },
     { id: 'map', icon: Map, label: 'Vue Territoriale' },
     { id: 'settings', icon: Settings, label: 'Configuration' },

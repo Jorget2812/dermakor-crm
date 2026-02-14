@@ -34,7 +34,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick, index = 0 }) => {
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.4 : 1,
   };
-  
+
   // Fallbacks for transition period
   const companyName = lead.companyName || lead.name || 'Sans Nom';
   const score = lead.leadScore || 0;
@@ -68,9 +68,8 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick, index = 0 }) => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2, delay: index * 0.03 }}
       whileHover={{ y: -4, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
-      className={`group relative bg-[#1C1F26] border border-[#2D323B] rounded-xl lg:rounded-2xl p-3 lg:p-5 cursor-grab active:cursor-grabbing transition-all hover:border-[#D4AF37]/50 shadow-2xl ${
-        isPremium ? 'ring-1 ring-[#D4AF37]/30 bg-gradient-to-br from-[#1C1F26] to-[#D4AF37]/5' : ''
-      } ${isDragging ? 'border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.2)]' : ''}`}
+      className={`group relative bg-[#1C1F26] border border-[#2D323B] rounded-xl lg:rounded-2xl p-3 lg:p-5 cursor-grab active:cursor-grabbing transition-all hover:border-[#D4AF37]/50 shadow-2xl ${isPremium ? 'ring-1 ring-[#D4AF37]/30 bg-gradient-to-br from-[#1C1F26] to-[#D4AF37]/5' : ''
+        } ${isDragging ? 'border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.2)]' : ''}`}
     >
       {/* Top Badges */}
       <div className="flex justify-between items-start mb-2 lg:mb-3">
@@ -85,6 +84,11 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick, index = 0 }) => {
             <span className="bg-status-error/10 text-status-error text-[8px] lg:text-[9px] font-bold px-1.5 lg:px-2 py-0.5 rounded-full flex items-center gap-1">
               <ShieldAlert size={9} className="lg:w-[10px] lg:h-[10px]" />
               URGENT
+            </span>
+          )}
+          {lead.source === 'LANDING_PAGE' && (
+            <span className="bg-blue-500/10 text-blue-500 text-[8px] px-2 py-0.5 rounded-full font-bold">
+              🌐 WEB
             </span>
           )}
         </div>

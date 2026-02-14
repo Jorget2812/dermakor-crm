@@ -10,6 +10,12 @@ import {
   Linkedin,
   Target,
   History,
+  Trash2,
+  Upload,
+  Download,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  Loader2,
   FileText,
   Zap,
   Save,
@@ -17,12 +23,14 @@ import {
   AlertCircle,
   TrendingUp,
   Tag,
-  UserPlus,
-  Trash2
+  UserPlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthProvider';
 import { fetchCollaborators } from '../utils/leads';
+import { storageService, ProspectDocument } from '../services/storageService';
+import { activityService, Activity } from '../services/activityService';
+import { saleService, Sale } from '../services/saleService';
 import {
   Prospect,
   PipelineStage,
@@ -50,6 +58,16 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate, onDe
   const [error, setError] = useState('');
   const [newObjection, setNewObjection] = useState('');
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<ProspectDocument[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [fetchingDocs, setFetchingDocs] = useState(false);
+  const [fetchingActivities, setFetchingActivities] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [isLoggingActivity, setIsLoggingActivity] = useState<'call' | 'email' | 'demo' | null>(null);
+  const [isLoggingSale, setIsLoggingSale] = useState(false);
+  const [saleData, setSaleData] = useState({ amount: 0, productName: '', notes: '' });
+  const [activityNote, setActivityNote] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { role } = useAuth();
 
   const isDirector = role === 'director' || role === 'directeur'; // Affiché comme 'Responsable' dans l'UI
@@ -69,6 +87,153 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate, onDe
       setError('');
     }
   }, [lead]);
+
+  useEffect(() => {
+    if (activeTab === 'documents' && lead?.id) {
+      loadDocuments();
+    }
+    if (activeTab === 'activities' && lead?.id) {
+      loadActivities();
+    }
+  }, [activeTab, lead?.id]);
+
+  const loadActivities = async () => {
+    if (!lead?.id) return;
+    setFetchingActivities(true);
+    try {
+      const data = await activityService.getActivities(lead.id);
+      setActivities(data);
+    } catch (err: any) {
+      console.error('Error loading activities:', err);
+    } finally {
+      setFetchingActivities(false);
+    }
+  };
+
+  const handleLogActivity = async () => {
+    if (!lead?.id || !isLoggingActivity || !activityNote.trim()) return;
+
+    setSaving(true);
+    try {
+      const titles = {
+        call: 'Llamada comercial',
+        email: 'Seguimiento por Email',
+        demo: 'Presentación / Demo'
+      };
+
+      await activityService.createActivity({
+        prospect_id: lead.id,
+        activity_type: isLoggingActivity,
+        title: titles[isLoggingActivity],
+        description: activityNote,
+        scheduled_date: new Date().toISOString(),
+        completed: true,
+        completed_at: new Date().toISOString(),
+        priority: 'normal'
+      });
+
+      setActivityNote('');
+      setIsLoggingActivity(null);
+      await loadActivities();
+    } catch (err: any) {
+      setError(`Error logging activity: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogSale = async () => {
+    if (!lead?.id || !saleData.amount) return;
+
+    setSaving(true);
+    try {
+      await saleService.createSale({
+        prospect_id: lead.id,
+        seller_id: lead.assigned_to,
+        sale_amount: saleData.amount,
+        product_name: saleData.productName,
+        notes: saleData.notes,
+        tracking_method: 'manual',
+        status: 'pending',
+        sale_date: new Date().toISOString().split('T')[0]
+      });
+
+      if (editedLead.pipelineStage !== PipelineStage.FERME_GAGNE) {
+        handleChange('pipelineStage', PipelineStage.FERME_GAGNE);
+      }
+
+      setIsLoggingSale(false);
+      setSaleData({ amount: 0, productName: '', notes: '' });
+      alert('Vente enregistrée avec succès !');
+    } catch (err: any) {
+      setError(`Error logging sale: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const loadDocuments = async () => {
+    if (!lead?.id) return;
+    setFetchingDocs(true);
+    try {
+      const docs = await storageService.listDocuments(lead.id);
+      setDocuments(docs);
+    } catch (err: any) {
+      console.error('Error loading documents:', err);
+    } finally {
+      setFetchingDocs(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !lead?.id) return;
+
+    setUploading(true);
+    setError('');
+    try {
+      const newDoc = await storageService.uploadDocument(lead.id, file);
+      setDocuments(prev => [newDoc, ...prev]);
+    } catch (err: any) {
+      setError(`Upload Error: ${err.message}`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownload = async (doc: ProspectDocument) => {
+    try {
+      const url = await storageService.getDownloadUrl(doc.file_path);
+      window.open(url, '_blank');
+    } catch (err: any) {
+      setError(`Download Error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteDoc = async (doc: ProspectDocument) => {
+    if (!window.confirm(`Supprimer ${doc.name} ?`)) return;
+    try {
+      await storageService.deleteDocument(doc.id, doc.file_path);
+      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+    } catch (err: any) {
+      setError(`Delete Error: ${err.message}`);
+    }
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.includes('image')) return <ImageIcon size={20} />;
+    if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) return <FileSpreadsheet size={20} />;
+    return <FileText size={20} />;
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   if (!lead || !editedLead) return null;
 
@@ -443,6 +608,89 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate, onDe
                       placeholder="Décrivez l'approche commerciale, les besoins spécifiques..."
                     />
                   </section>
+
+                  {/* DIRECTOR SALE LOGGING */}
+                  {isDirector && (
+                    <section className="bg-[#D4AF37]/5 border-2 border-dashed border-[#D4AF37]/30 rounded-[32px] p-8">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-black shadow-lg">
+                            <TrendingUp size={20} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-widest">Enregistrement de la Vente</h3>
+                            <p className="text-[9px] text-[#D4AF37] font-black uppercase">Réservé à la direction</p>
+                          </div>
+                        </div>
+                        {!isLoggingSale && (
+                          <button
+                            onClick={() => setIsLoggingSale(true)}
+                            className="bg-[#D4AF37] text-black px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform"
+                          >
+                            Démarrer Signature
+                          </button>
+                        )}
+                      </div>
+
+                      <AnimatePresence>
+                        {isLoggingSale && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-6 pt-2"
+                          >
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black text-[#6B6B63] uppercase tracking-widest">Montant de la Vente (CHF)</label>
+                                <input
+                                  type="number"
+                                  value={saleData.amount}
+                                  onChange={e => setSaleData({ ...saleData, amount: Number(e.target.value) })}
+                                  className="w-full bg-[#0F1115] border border-[#2D323B] rounded-xl px-5 py-3 text-white font-black"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black text-[#6B6B63] uppercase tracking-widest">Produit principal</label>
+                                <input
+                                  type="text"
+                                  value={saleData.productName}
+                                  onChange={e => setSaleData({ ...saleData, productName: e.target.value })}
+                                  className="w-full bg-[#0F1115] border border-[#2D323B] rounded-xl px-5 py-3 text-white font-black"
+                                  placeholder="KRX Ligne, etc."
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-black text-[#6B6B63] uppercase tracking-widest">Notes de Facturation / Comms</label>
+                              <textarea
+                                value={saleData.notes}
+                                onChange={e => setSaleData({ ...saleData, notes: e.target.value })}
+                                className="w-full bg-[#0F1115] border border-[#2D323B] rounded-xl px-5 py-3 text-white text-sm"
+                                placeholder="..."
+                              />
+                            </div>
+                            <div className="flex justify-end gap-4 pt-2">
+                              <button
+                                onClick={() => setIsLoggingSale(false)}
+                                className="text-[10px] font-black text-[#6B6B63] uppercase tracking-[0.2em] hover:text-white"
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                onClick={handleLogSale}
+                                disabled={saving || !saleData.amount}
+                                className="bg-[#D4AF37] text-black px-10 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest disabled:opacity-50"
+                              >
+                                {saving ? 'Traitement...' : 'Confirmer la Vente & Commission'}
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </section>
+                  )}
                 </div>
               )}
 
@@ -450,50 +698,110 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate, onDe
               {activeTab === 'activities' && (
                 <div className="space-y-8">
                   {/* Quick Activity Button */}
-                  <div className="flex gap-4 mb-4">
+                  <div className="flex gap-4">
                     <button
-                      onClick={() => alert('Fonction Log Appel - En développement')}
-                      className="flex-1 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37] transition-all group"
+                      onClick={() => setIsLoggingActivity('call')}
+                      className={`flex-1 py-4 bg-[#1C1F26] border rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group ${isLoggingActivity === 'call' ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-[#2D323B] hover:border-[#D4AF37]'}`}
                     >
-                      <Phone size={20} className="text-[#6B6B63] group-hover:text-[#D4AF37]" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#6B6B63] group-hover:text-[#D4AF37]">Log Appel</span>
+                      <Phone size={20} className={isLoggingActivity === 'call' ? 'text-[#D4AF37]' : 'text-[#6B6B63] group-hover:text-[#D4AF37]'} />
+                      <span className={`text-[10px] font-extrabold uppercase tracking-widest ${isLoggingActivity === 'call' ? 'text-[#D4AF37]' : 'text-[#6B6B63] group-hover:text-[#D4AF37]'}`}>Log Appel</span>
                     </button>
                     <button
-                      onClick={() => alert('Fonction Send Email - En développement')}
-                      className="flex-1 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37] transition-all group"
+                      onClick={() => setIsLoggingActivity('email')}
+                      className={`flex-1 py-4 bg-[#1C1F26] border rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group ${isLoggingActivity === 'email' ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-[#2D323B] hover:border-[#D4AF37]'}`}
                     >
-                      <Mail size={20} className="text-[#6B6B63] group-hover:text-[#D4AF37]" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#6B6B63] group-hover:text-[#D4AF37]">Send Email</span>
+                      <Mail size={20} className={isLoggingActivity === 'email' ? 'text-[#D4AF37]' : 'text-[#6B6B63] group-hover:text-[#D4AF37]'} />
+                      <span className={`text-[10px] font-extrabold uppercase tracking-widest ${isLoggingActivity === 'email' ? 'text-[#D4AF37]' : 'text-[#6B6B63] group-hover:text-[#D4AF37]'}`}>Send Email</span>
                     </button>
                     <button
-                      onClick={() => alert('Fonction Quick Demo - En développement')}
-                      className="flex-1 py-4 bg-[#1C1F26] border border-[#2D323B] rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-[#D4AF37] transition-all group"
+                      onClick={() => setIsLoggingActivity('demo')}
+                      className={`flex-1 py-4 bg-[#1C1F26] border rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group ${isLoggingActivity === 'demo' ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-[#2D323B] hover:border-[#D4AF37]'}`}
                     >
-                      <Zap size={20} className="text-[#6B6B63] group-hover:text-[#D4AF37]" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#6B6B63] group-hover:text-[#D4AF37]">Quick Demo</span>
+                      <Zap size={20} className={isLoggingActivity === 'demo' ? 'text-[#D4AF37]' : 'text-[#6B6B63] group-hover:text-[#D4AF37]'} />
+                      <span className={`text-[10px] font-extrabold uppercase tracking-widest ${isLoggingActivity === 'demo' ? 'text-[#D4AF37]' : 'text-[#6B6B63] group-hover:text-[#D4AF37]'}`}>Quick Demo</span>
                     </button>
                   </div>
 
-                  {/* Timeline */}
-                  <div className="relative pl-8 space-y-10 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-executive-neutral-100">
-                    <div className="relative">
-                      <div className="absolute -left-8 w-6 h-6 bg-executive-gold-500 rounded-full border-4 border-executive-neutral-50 flex items-center justify-center z-10 shadow-lg"></div>
-                      <div className="bg-white p-6 rounded-3xl border border-executive-neutral-200 shadow-sm">
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-bold text-executive-neutral-800 text-sm">Appel de qualification effectué</p>
-                          <span className="text-[10px] text-executive-neutral-400 font-bold">AUJOURD'HUI</span>
+                  {/* Logging Form Inline */}
+                  <AnimatePresence>
+                    {isLoggingActivity && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-3xl p-6 mb-10 space-y-4">
+                          <h4 className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] flex items-center gap-2">
+                            {isLoggingActivity === 'call' ? '☎️ Rapport d\'appel' : isLoggingActivity === 'email' ? '📧 Programmation Email' : '🤝 Agenda Demo'}
+                          </h4>
+                          <textarea
+                            value={activityNote}
+                            onChange={(e) => setActivityNote(e.target.value)}
+                            className="w-full bg-[#0F1115] border border-[#2D323B] rounded-2xl p-4 text-white text-sm outline-none focus:border-[#D4AF37]/50 transition-all min-h-[100px]"
+                            placeholder={isLoggingActivity === 'call' ? "Notes de l'appel..." : "Contenu ou objet..."}
+                          />
+                          <div className="flex justify-end gap-3">
+                            <button
+                              onClick={() => setIsLoggingActivity(null)}
+                              className="px-6 py-2 text-[9px] font-black text-[#6B6B63] uppercase tracking-widest hover:text-white"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              onClick={handleLogActivity}
+                              className="px-6 py-2 bg-[#D4AF37] text-black rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#A68F54] transition-all"
+                            >
+                              Valider
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-xs text-executive-neutral-500 leading-relaxed italic">"Le client semble très intéressé par la ligne KRX. Besoin urgent d'une démonstration sur site. Possède déjà une équipe de 4 esthéticiennes."</p>
-                      </div>
-                    </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                    <div className="relative opacity-60">
-                      <div className="absolute -left-8 w-6 h-6 bg-executive-neutral-300 rounded-full border-4 border-executive-neutral-50 flex items-center justify-center z-10"></div>
-                      <div className="p-4 rounded-2xl border border-dashed border-executive-neutral-200">
-                        <p className="text-xs font-bold text-executive-neutral-400">Email Marketing Envoyé - Template: Brochure 2026</p>
-                        <p className="text-[9px] text-executive-neutral-400 font-medium">12 Février @ 14:30</p>
+                  {/* Timeline */}
+                  <div className="relative pl-10 space-y-10 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-[#D4AF37]/40 before:to-transparent">
+                    {fetchingActivities ? (
+                      <div className="flex justify-center py-10">
+                        <Loader2 className="animate-spin text-[#D4AF37]" size={32} />
                       </div>
-                    </div>
+                    ) : (
+                      activities.map((act) => (
+                        <div key={act.id} className="relative group">
+                          <div className={`absolute -left-[35px] w-8 h-8 rounded-full border-4 border-[#0F1115] flex items-center justify-center z-10 shadow-xl transition-all ${act.completed ? 'bg-[#D4AF37] text-black' : 'bg-[#1C1F26] text-[#D4AF37]'}`}>
+                            {act.activity_type === 'call' ? <Phone size={14} /> : act.activity_type === 'email' ? <Mail size={14} /> : <Zap size={14} />}
+                          </div>
+                          <div className="bg-[#1C1F26] p-8 rounded-[32px] border border-[#2D323B] hover:border-[#D4AF37]/30 transition-all">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <h5 className="font-black text-white text-sm uppercase tracking-tight">{act.title}</h5>
+                                <p className="text-[9px] text-[#6B6B63] font-black uppercase tracking-[0.2em] mt-1">
+                                  {new Date(act.scheduled_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {isDirector && (
+                                <button
+                                  onClick={() => activityService.deleteActivity(act.id).then(() => loadActivities())}
+                                  className="text-[#6B6B63] hover:text-[#EF4444] p-2 opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#9E9E96] leading-relaxed font-medium italic opacity-80">
+                              "{act.description || 'Pas de description.'}"
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+
+                    {activities.length === 0 && !fetchingActivities && (
+                      <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.02]">
+                        <p className="text-[10px] text-[#6B6B63] font-black uppercase tracking-[0.3em]">Aucune activité enregistrée stratégiquement</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -501,33 +809,81 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onClose, onUpdate, onDe
               {/* TAB: DOCUMENTS */}
               {activeTab === 'documents' && (
                 <div className="space-y-6">
-                  <div className="border-2 border-dashed border-executive-neutral-200 rounded-[32px] p-12 text-center bg-white">
-                    <div className="w-16 h-16 bg-executive-neutral-50 rounded-full flex items-center justify-center mx-auto mb-4 text-executive-neutral-300">
-                      <FileText size={32} />
+                  <div className="border-2 border-dashed border-[#2D323B] rounded-[32px] p-12 text-center bg-[#1C1F26]">
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-[#D4AF37] shadow-xl">
+                      {uploading ? <Loader2 size={32} className="animate-spin" /> : <Upload size={32} />}
                     </div>
-                    <h4 className="text-sm font-bold text-executive-neutral-800 mb-2">Coffre-fort Digital Partenaire</h4>
-                    <p className="text-xs text-executive-neutral-400 mb-6 max-w-xs mx-auto">Stockez ici les contrats signés, fiches techniques et factures.</p>
-                    <button className="bg-executive-neutral-100 text-executive-neutral-600 px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-executive-gold-500 hover:text-white transition-all shadow-inner">
-                      Déposer Documents
+                    <h4 className="text-sm font-black text-white mb-2 uppercase tracking-widest">Coffre-fort Digital Partenaire</h4>
+                    <p className="text-[10px] text-[#6B6B63] mb-6 max-w-xs mx-auto font-black uppercase tracking-widest">Stockez ici les contrats signés, fiches techniques et factures.</p>
+
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    />
+
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="bg-[#D4AF37] text-black px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#E5C158] transition-all shadow-2xl active:scale-95 disabled:opacity-50"
+                    >
+                      {uploading ? 'Transfert en cours...' : 'Déposer Documents'}
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-4 p-4 bg-white border border-executive-neutral-100 rounded-2xl hover:border-executive-gold-500 transition-all cursor-pointer group shadow-sm">
-                      <div className="w-10 h-10 bg-executive-neutral-50 rounded-lg flex items-center justify-center text-status-info"><FileText size={20} /></div>
-                      <div>
-                        <p className="text-xs font-bold text-executive-neutral-800">Contrat_Cadre_V1.pdf</p>
-                        <p className="text-[9px] text-executive-neutral-400 font-bold uppercase">1.2 MB • PDF</p>
-                      </div>
+                  {fetchingDocs ? (
+                    <div className="flex justify-center py-10">
+                      <Loader2 className="animate-spin text-[#D4AF37]" size={32} />
                     </div>
-                    <div className="flex items-center gap-4 p-4 bg-white border border-executive-neutral-100 rounded-2xl hover:border-executive-gold-500 transition-all cursor-pointer group shadow-sm">
-                      <div className="w-10 h-10 bg-executive-neutral-50 rounded-lg flex items-center justify-center text-status-success"><FileText size={20} /></div>
-                      <div>
-                        <p className="text-xs font-bold text-executive-neutral-800">Photos_Cabinet_ZH.zip</p>
-                        <p className="text-[9px] text-executive-neutral-400 font-bold uppercase">45 MB • ZIP</p>
-                      </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {documents.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between p-5 bg-[#1C1F26] border border-[#2D323B] rounded-2xl hover:border-[#D4AF37]/50 transition-all group shadow-xl"
+                        >
+                          <div className="flex items-center gap-4 flex-1 min-w-0" onClick={() => handleDownload(doc)}>
+                            <div className={`w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center transition-colors group-hover:bg-[#D4AF37]/10 ${doc.file_type.includes('pdf') ? 'text-red-400' :
+                              doc.file_type.includes('image') ? 'text-blue-400' : 'text-[#D4AF37]'
+                              }`}>
+                              {getFileIcon(doc.file_type)}
+                            </div>
+                            <div className="flex-1 min-w-0 cursor-pointer">
+                              <p className="text-[11px] font-black text-white truncate uppercase tracking-tight group-hover:text-[#D4AF37] transition-colors">{doc.name}</p>
+                              <p className="text-[9px] text-[#6B6B63] font-black uppercase mt-0.5 tracking-widest">{formatSize(doc.file_size)} • {doc.file_type.split('/').pop()?.toUpperCase()}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDownload(doc)}
+                              className="p-2 text-[#6B6B63] hover:text-[#D4AF37] transition-colors"
+                              title="Télécharger"
+                            >
+                              <Download size={16} />
+                            </button>
+                            {isDirector && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc); }}
+                                className="p-2 text-[#6B6B63] hover:text-[#EF4444] transition-colors opacity-0 group-hover:opacity-100"
+                                title="Supprimer"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {documents.length === 0 && !fetchingDocs && (
+                        <div className="col-span-2 py-20 text-center border-2 border-dashed border-white/5 rounded-[32px] bg-white/[0.02]">
+                          <p className="text-[10px] text-[#6B6B63] font-black uppercase tracking-[0.3em]">Aucun document stratégique déposé</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

@@ -29,7 +29,7 @@ export async function calculateCommissionsForMonth(month: number, year: number):
         // Note: On cherche dans 'profiles' qui mapped à User dans notre logique
         const { data: vendeurs, error: vendeursError } = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, commission_percentage')
             .or('role.eq.sales_rep,role.eq.vendeur'); // Support both legacy and new roles
         // .eq('is_active', true); // Add this if is_active column exists in profiles
 
@@ -89,8 +89,14 @@ async function calculateVendeurPayout(vendeur: any, rule: CommissionRule, month:
     // --- CALCULS ---
 
     // 1. Commissions Base
-    const commStd = revenueStd * (Number(rule.standardCommissionPct) / 100);
-    const commPrm = revenuePrm * (Number(rule.premiumCommissionPct) / 100);
+    // Use personalized rate if available in vendor profile, otherwise fallback to global rule
+    const sellerRate = vendedor.commission_percentage || null;
+
+    const rateStd = sellerRate !== null ? sellerRate : Number(rule.standardCommissionPct);
+    const ratePrm = sellerRate !== null ? sellerRate : Number(rule.premiumCommissionPct);
+
+    const commStd = revenueStd * (rateStd / 100);
+    const commPrm = revenuePrm * (ratePrm / 100);
 
     // 2. Bonus Volume
     let bonusVolume = 0;
@@ -204,7 +210,8 @@ async function calculateVendeurPayout(vendeur: any, rule: CommissionRule, month:
     // 2. Insérer nouveaux détails
     const detailsToInsert = allDeals.map((deal: any) => {
         const isPremium = deal.chosen_plan === 'premium';
-        const rate = isPremium ? Number(rule.premiumCommissionPct) : Number(rule.standardCommissionPct);
+        const sellerRate = vendedor.commission_percentage || null;
+        const rate = sellerRate !== null ? sellerRate : (isPremium ? Number(rule.premiumCommissionPct) : Number(rule.standardCommissionPct));
         const val = Number(deal.final_deal_value || 0);
 
         return {
