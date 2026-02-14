@@ -11,7 +11,8 @@ import {
   X,
   LogOut,
   CheckCircle2,
-  User
+  User,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
@@ -30,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'performance', icon: TrendingUp, label: 'Performance Analytics' },
     { id: 'commissions', icon: DollarSign, label: 'Commissions' },
     { id: 'academy', icon: GraduationCap, label: 'DermaKor Academy' },
+    { id: 'approval', icon: UserPlus, label: 'Approbation Partners' },
     { id: 'map', icon: Map, label: 'Vue Territoriale' },
     { id: 'settings', icon: Settings, label: 'Configuration' },
   ];

@@ -26,6 +26,7 @@ import LeadDetails from './components/LeadDetails';
 import SwissMap from './components/SwissMap';
 import Settings from './components/Settings';
 import MessagingPanel from './components/MessagingPanel';
+import PartnerApproval from './components/PartnerApproval';
 import { useAuth } from './components/AuthProvider';
 import { fetchLeads, createLead, updateLead, deleteLead, fetchCollaborators } from './utils/leads';
 import { messagingService } from './services/messagingService';
@@ -350,6 +351,8 @@ const App: React.FC = () => {
         );
       case 'map':
         return <SwissMap leads={leads} />;
+      case 'approval':
+        return <PartnerApproval />;
       case 'settings':
         return <Settings />;
       default:
